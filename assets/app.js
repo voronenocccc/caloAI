@@ -410,19 +410,21 @@ function homeView(total, target, progress) {
           <button class="pill" data-action="clear-day">${t("clear")}</button>
         </div>
       </div>
-      <div class="calendar-nav">
-        <button data-action="shift-week" data-days="-7">← ${ui("неделя", "week")}</button>
-        <strong>${weekRangeTitle()}</strong>
-        <button data-action="shift-week" data-days="7">${ui("неделя", "week")} →</button>
-      </div>
-      <div class="day-strip">
-        ${weekDays().map(dayButton).join("")}
-      </div>
-      <div class="meal-head">
-        <div>
-          <span>${ui("Формат дневника", "Diary format")}</span>
-          <strong>${t("timeFormat")}</strong>
+      <div class="calendar-card">
+        <div class="calendar-nav">
+          <button data-action="shift-week" data-days="-7" aria-label="${ui("Предыдущая неделя", "Previous week")}">←</button>
+          <button class="calendar-current" data-action="open-calendar" type="button">
+            <span>${ui("Неделя", "Week")}</span>
+            <strong>${weekRangeTitle()}</strong>
+          </button>
+          <button data-action="shift-week" data-days="7" aria-label="${ui("Следующая неделя", "Next week")}">→</button>
         </div>
+        <div class="day-strip">
+          ${weekDays().map(dayButton).join("")}
+        </div>
+      </div>
+      <div class="diary-toolbar">
+        <strong>${t("timeFormat")}</strong>
         <button class="pill" data-action="copy-day-tomorrow">${t("dayToTomorrow")}</button>
       </div>
       <div class="stack">
@@ -629,20 +631,27 @@ function photoView() {
       <div class="section-title">
         <div><h2>${t("photo")}</h2><p>${t("photoCaption")}</p></div>
       </div>
-      <div class="card photo-box">
+      <div class="photo-panel">
         <div class="photo-source-actions">
           <input id="photo-camera-input" class="visually-hidden" type="file" accept="image/*" capture="environment" />
           <input id="photo-gallery-input" class="visually-hidden" type="file" accept="image/*" />
-          <button class="button" data-action="take-photo" type="button">${ui("Сфоткать сейчас", "Take photo now")}</button>
-          <button class="button secondary" data-action="pick-photo" type="button">${ui("Выбрать из галереи", "Choose from gallery")}</button>
+          <button class="photo-source primary" data-action="take-photo" type="button">
+            <span>${icon("i-camera")}</span>
+            <strong>${ui("Камера", "Camera")}</strong>
+            <em>${ui("Сфоткать сейчас", "Take now")}</em>
+          </button>
+          <button class="photo-source" data-action="pick-photo" type="button">
+            <span>${icon("i-plus")}</span>
+            <strong>${ui("Галерея", "Gallery")}</strong>
+            <em>${ui("Выбрать фото", "Pick photo")}</em>
+          </button>
         </div>
-        <p id="photo-file-name" class="mini-note">${ui("На Android кнопка камеры откроет съемку сразу, если Telegram WebView разрешает доступ.", "On Android, the camera button opens capture directly when Telegram WebView allows it.")}</p>
+        <p id="photo-file-name" class="photo-picked">${ui("Фото не выбрано", "No photo selected")}</p>
         <div class="field">
           <label>${ui("Уточнение", "Note")}</label>
           <textarea id="photo-note" placeholder="${ui("Например: съел 180 г; или курица 150 г, гречка половина тарелки", "Example: ate 180 g, chicken 150 g, half a plate of buckwheat")}"></textarea>
         </div>
-        <p class="mini-note">${ui("Можно отправить тарелку, упаковку или этикетку. Если вес не очевиден, напиши граммовку в уточнении.", "Upload a plate, package, or nutrition label. If the weight is unclear, add grams in the note.")}</p>
-        <button class="button" data-action="analyze-photo">${ui("Анализировать", "Analyze")}</button>
+        <button class="button photo-submit" data-action="analyze-photo">${ui("Анализировать", "Analyze")}</button>
       </div>
       <div id="photo-result" class="stack section"></div>
     </section>
@@ -1025,7 +1034,7 @@ function bind() {
     render();
     toast("Дневник очищен");
   });
-  document.querySelector("[data-action='open-calendar']")?.addEventListener("click", openCalendar);
+  document.querySelectorAll("[data-action='open-calendar']").forEach(btn => btn.addEventListener("click", openCalendar));
   document.querySelectorAll("[data-action='shift-week']").forEach(btn => btn.addEventListener("click", () => {
     shiftSelectedDate(Number(btn.dataset.days || 0));
   }));
@@ -1420,9 +1429,12 @@ async function openBarcodeScanner() {
   openModal(`
     <div class="section-title"><div><h2>${ui("Сканер штрихкода", "Barcode scanner")}</h2><p>${ui("наведи камеру на упаковку продукта", "point the camera at the package")}</p></div></div>
     <div class="barcode-box stack">
-      <video id="barcode-video" autoplay muted playsinline></video>
-      <p id="barcode-status" class="mini-note">${ui("Запрашиваю доступ к камере...", "Requesting camera access...")}</p>
-      <form id="barcode-manual" class="stack">
+      <div class="scanner-stage">
+        <video id="barcode-video" autoplay muted playsinline></video>
+        <div class="scanner-frame" aria-hidden="true"><i></i></div>
+      </div>
+      <p id="barcode-status" class="scan-status">${ui("Готовлю камеру...", "Preparing camera...")}</p>
+      <form id="barcode-manual" class="barcode-manual">
         <div class="field"><label>${ui("Или введи штрихкод вручную", "Or enter barcode manually")}</label><input name="barcode" inputmode="numeric" autocomplete="off" placeholder="460..." /></div>
         <button class="button secondary">${ui("Найти по коду", "Find by code")}</button>
       </form>
@@ -1446,7 +1458,7 @@ async function openBarcodeScanner() {
   const status = document.querySelector("#barcode-status");
   const video = document.querySelector("#barcode-video");
   if (!navigator.mediaDevices?.getUserMedia) {
-    status.textContent = ui("Камера недоступна в этом браузере. Введи код вручную.", "Camera is unavailable in this browser. Enter the code manually.");
+    status.textContent = ui("Камера недоступна. Введи код вручную.", "Camera is unavailable. Enter the code manually.");
     return;
   }
 
@@ -1463,7 +1475,7 @@ async function openBarcodeScanner() {
     };
     if ("BarcodeDetector" in window) {
       const detector = new BarcodeDetector({ formats: ["ean_13", "ean_8", "upc_a", "upc_e", "code_128"] });
-      status.textContent = ui("Сканирую... держи код в рамке.", "Scanning... keep the code in frame.");
+      status.textContent = ui("Сканирую штрихкод...", "Scanning barcode...");
       const scan = async () => {
         if (!active || !document.body.contains(video)) return;
         try {
@@ -1473,14 +1485,14 @@ async function openBarcodeScanner() {
             return;
           }
         } catch {
-          status.textContent = ui("Не могу распознать кадр. Попробуй ярче осветить упаковку.", "Cannot read this frame. Try better lighting.");
+          status.textContent = ui("Не вижу код. Наведи ровнее и ближе.", "Cannot see the code. Move closer and steady.");
         }
         requestAnimationFrame(scan);
       };
       requestAnimationFrame(scan);
       return;
     }
-    status.textContent = ui("Включаю совместимый сканер для Android...", "Starting Android-compatible scanner...");
+    status.textContent = ui("Запускаю сканер...", "Starting scanner...");
     barcodeControls = await scanBarcodeWithZxing(video, () => active, onCode, status);
   } catch {
     status.textContent = ui("Не получил доступ к камере. Можно ввести код вручную.", "Camera access failed. You can enter the code manually.");
@@ -1496,7 +1508,7 @@ async function scanBarcodeWithZxing(video, isActive, onCode, status) {
       const code = result?.getText?.() || result?.text;
       if (code) onCode(code);
     });
-    status.textContent = ui("Сканирую в совместимом режиме... держи штрихкод в кадре.", "Scanning in compatible mode... keep the barcode in frame.");
+    status.textContent = ui("Сканирую штрихкод...", "Scanning barcode...");
     return controls;
   } catch {
     status.textContent = ui("Автосканер не запустился. Введи штрихкод вручную в поле ниже.", "Auto scanner failed. Enter the barcode manually below.");

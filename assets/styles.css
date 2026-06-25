@@ -538,31 +538,57 @@ button {
   padding: 0 10px;
 }
 
+.calendar-card {
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 20px;
+  padding: 10px;
+  margin: 0 0 12px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.075), rgba(255, 255, 255, 0.03)),
+    rgba(18, 24, 32, 0.62);
+}
+
 .day-strip {
   display: grid;
   grid-template-columns: repeat(7, minmax(0, 1fr));
-  gap: 6px;
-  margin: 0 0 12px;
+  gap: 7px;
 }
 
 .calendar-nav {
   display: grid;
-  grid-template-columns: 86px 1fr 86px;
+  grid-template-columns: 42px 1fr 42px;
   gap: 8px;
-  align-items: center;
-  margin: 0 0 10px;
+  align-items: stretch;
+  margin: 0 0 9px;
 }
 
-.calendar-nav strong {
-  text-align: center;
+.calendar-nav button {
+  min-height: 42px;
+  border-radius: 14px;
+}
+
+.calendar-nav > button {
+  font-size: 17px;
+}
+
+.calendar-current {
+  display: grid;
+  place-items: center;
+  gap: 2px;
+  padding: 5px 10px;
+}
+
+.calendar-current span {
   color: var(--muted);
-  font-size: 12px;
+  font-size: 10px;
   font-weight: 900;
   text-transform: uppercase;
 }
 
-.calendar-nav button {
-  min-height: 36px;
+.calendar-current strong {
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 950;
 }
 
 .month-calendar {
@@ -631,10 +657,10 @@ button {
 
 .day-chip {
   min-width: 0;
-  min-height: 62px;
+  min-height: 66px;
   border: 1px solid var(--line);
-  border-radius: 16px;
-  background: rgba(255, 255, 255, 0.05);
+  border-radius: 15px;
+  background: rgba(255, 255, 255, 0.045);
   color: var(--muted);
   display: grid;
   place-items: center;
@@ -669,9 +695,12 @@ button {
 }
 
 .day-chip.active {
-  border-color: rgba(70, 240, 162, 0.42);
-  background: linear-gradient(135deg, rgba(70, 240, 162, 0.2), rgba(65, 215, 255, 0.12));
+  border-color: rgba(70, 240, 162, 0.58);
+  background:
+    linear-gradient(150deg, rgba(70, 240, 162, 0.2), rgba(65, 215, 255, 0.13)),
+    rgba(255, 255, 255, 0.055);
   color: var(--green);
+  box-shadow: inset 0 0 0 1px rgba(70, 240, 162, 0.14);
 }
 
 .meal-strip {
@@ -732,6 +761,19 @@ button {
   display: block;
   margin-top: 2px;
   font-size: 18px;
+}
+
+.diary-toolbar {
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin: 0 2px 10px;
+}
+
+.diary-toolbar strong {
+  font-size: 15px;
 }
 
 .stack {
@@ -1343,13 +1385,90 @@ button {
   stroke-linecap: round;
 }
 
-.barcode-box video {
+.scanner-stage {
+  position: relative;
+  overflow: hidden;
   width: 100%;
   aspect-ratio: 4 / 3;
-  border: 1px solid var(--line);
-  border-radius: 18px;
-  background: #05070a;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 22px;
+  background:
+    radial-gradient(circle at 50% 42%, rgba(65, 215, 255, 0.08), transparent 38%),
+    #05070a;
+}
+
+.barcode-box video {
+  width: 100%;
+  height: 100%;
   object-fit: cover;
+}
+
+.scanner-frame {
+  position: absolute;
+  inset: 11%;
+  border: 2px solid rgba(70, 240, 162, 0.74);
+  border-radius: 18px;
+  box-shadow:
+    0 0 0 999px rgba(0, 0, 0, 0.18),
+    0 0 30px rgba(70, 240, 162, 0.15);
+  pointer-events: none;
+}
+
+.scanner-frame::before,
+.scanner-frame::after {
+  content: "";
+  position: absolute;
+  left: 12%;
+  right: 12%;
+  height: 1px;
+  background: rgba(255, 255, 255, 0.28);
+}
+
+.scanner-frame::before {
+  top: 35%;
+}
+
+.scanner-frame::after {
+  top: 65%;
+}
+
+.scanner-frame i {
+  position: absolute;
+  left: 9%;
+  right: 9%;
+  top: 50%;
+  height: 2px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, transparent, var(--green), var(--cyan), transparent);
+  box-shadow: 0 0 20px rgba(70, 240, 162, 0.6);
+  animation: barcode-scan 1.9s ease-in-out infinite;
+}
+
+.scan-status {
+  border: 1px solid rgba(70, 240, 162, 0.16);
+  border-radius: 16px;
+  padding: 11px 12px;
+  margin: 0;
+  color: var(--text);
+  background: rgba(70, 240, 162, 0.07);
+  font-size: 12px;
+  font-weight: 850;
+}
+
+.barcode-manual {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px;
+  align-items: end;
+}
+
+.barcode-manual .field {
+  margin: 0;
+}
+
+@keyframes barcode-scan {
+  0%, 100% { transform: translateY(-42px); opacity: 0.5; }
+  50% { transform: translateY(42px); opacity: 1; }
 }
 
 .notice-card {
@@ -1410,10 +1529,100 @@ button {
   gap: 10px;
 }
 
+.photo-panel {
+  border: 1px solid var(--line);
+  border-radius: 22px;
+  padding: 14px;
+  background:
+    linear-gradient(160deg, rgba(65, 215, 255, 0.08), rgba(70, 240, 162, 0.045)),
+    rgba(18, 24, 32, 0.76);
+  box-shadow: 0 16px 42px rgba(0, 0, 0, 0.22);
+}
+
 .photo-source-actions {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 8px;
+  margin-bottom: 10px;
+}
+
+.photo-source {
+  min-width: 0;
+  min-height: 112px;
+  display: grid;
+  align-content: center;
+  justify-items: start;
+  gap: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 18px;
+  padding: 13px;
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.055);
+  text-align: left;
+}
+
+.photo-source.primary {
+  border-color: rgba(70, 240, 162, 0.28);
+  background:
+    linear-gradient(145deg, rgba(70, 240, 162, 0.16), rgba(65, 215, 255, 0.08)),
+    rgba(255, 255, 255, 0.05);
+}
+
+.photo-source span {
+  width: 36px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+  border-radius: 13px;
+  color: #06110d;
+  background: linear-gradient(135deg, var(--green), var(--cyan));
+}
+
+.photo-source svg {
+  width: 19px;
+  height: 19px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.photo-source strong,
+.photo-source em {
+  display: block;
+  max-width: 100%;
+}
+
+.photo-source strong {
+  font-size: 15px;
+  font-weight: 950;
+}
+
+.photo-source em {
+  color: var(--muted);
+  font-size: 11px;
+  font-style: normal;
+  font-weight: 800;
+}
+
+.photo-picked {
+  min-height: 34px;
+  display: flex;
+  align-items: center;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 0 11px;
+  margin: 0 0 10px;
+  color: var(--muted);
+  background: rgba(255, 255, 255, 0.045);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.photo-submit {
+  width: 100%;
+  margin-top: 10px;
 }
 
 .visually-hidden {
@@ -1790,11 +1999,12 @@ button {
   .actions,
   .library-metrics,
   .measurement-guide,
-  .measure-stat-grid {
+  .measure-stat-grid,
+  .photo-source-actions,
+  .barcode-manual {
     grid-template-columns: 1fr;
   }
 
-  .quick-picks,
   .quick-picks {
     grid-template-columns: 1fr;
   }
@@ -1817,5 +2027,39 @@ button {
 
   .entry-actions {
     justify-content: flex-start;
+  }
+
+  .calendar-card {
+    padding: 8px;
+  }
+
+  .calendar-nav {
+    grid-template-columns: 38px 1fr 38px;
+  }
+
+  .day-strip {
+    gap: 5px;
+  }
+
+  .day-chip {
+    min-height: 58px;
+    border-radius: 13px;
+  }
+
+  .day-chip strong {
+    font-size: 15px;
+  }
+
+  .calendar-current strong {
+    font-size: 12px;
+  }
+
+  .diary-toolbar {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .diary-toolbar .pill {
+    width: 100%;
   }
 }
