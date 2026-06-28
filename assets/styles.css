@@ -2064,6 +2064,390 @@ button {
   }
 }
 
+.app-shell {
+  padding-bottom: 122px;
+}
+
+.summary-card,
+.tool-panel,
+.diary-card {
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: var(--panel);
+}
+
+.summary-card {
+  padding: 14px;
+}
+
+.summary-top {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 12px;
+  align-items: start;
+}
+
+.summary-top span,
+.summary-top em,
+.summary-macros span,
+.summary-status span {
+  display: block;
+  color: var(--muted);
+  font-size: 11px;
+  font-style: normal;
+  font-weight: 850;
+}
+
+.summary-top span {
+  color: var(--green);
+  text-transform: uppercase;
+}
+
+.summary-top strong {
+  display: block;
+  margin-top: 6px;
+  font-size: 27px;
+  line-height: 1;
+}
+
+.summary-top em {
+  margin-top: 6px;
+}
+
+.summary-top b {
+  min-width: 56px;
+  min-height: 36px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  color: var(--green);
+  background: var(--panel-strong);
+  font-size: 14px;
+}
+
+.summary-top b.over {
+  color: var(--rose);
+}
+
+.summary-progress {
+  height: 7px;
+  margin-top: 14px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--panel-strong);
+}
+
+.summary-progress i {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--green);
+}
+
+.summary-progress.over i {
+  background: var(--rose);
+}
+
+.summary-macros {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.summary-macros div {
+  min-width: 0;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 10px;
+  background: var(--panel-strong);
+}
+
+.summary-macros strong {
+  display: block;
+  margin-top: 4px;
+  color: var(--text);
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+.summary-macros .over strong {
+  color: var(--rose);
+}
+
+.summary-status {
+  min-height: 38px;
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  align-items: center;
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid var(--line);
+}
+
+.summary-status button {
+  min-height: 32px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 0 12px;
+  color: var(--text);
+  background: var(--panel-strong);
+  font-size: 12px;
+  font-weight: 850;
+}
+
+.tool-panel {
+  padding: 10px;
+}
+
+.diary-card {
+  margin-top: 16px;
+  padding: 12px;
+}
+
+.diary-head {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 10px;
+  align-items: start;
+}
+
+.diary-head h2 {
+  margin: 0;
+  font-size: 24px;
+}
+
+.diary-head p {
+  margin: 5px 0 0;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.diary-head button,
+.diary-commands button {
+  min-height: 34px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 0 12px;
+  color: var(--text);
+  background: var(--panel-strong);
+  font-size: 12px;
+  font-weight: 850;
+}
+
+.week-control {
+  display: grid;
+  grid-template-columns: 38px 1fr 38px;
+  gap: 8px;
+  align-items: center;
+  margin-top: 12px;
+}
+
+.week-control button {
+  min-height: 38px;
+  border: 1px solid var(--line);
+  border-radius: 13px;
+  color: var(--text);
+  background: var(--panel-strong);
+  font-size: 16px;
+}
+
+.week-control strong {
+  min-height: 38px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--line);
+  border-radius: 13px;
+  color: var(--text);
+  background: var(--panel-strong);
+  font-size: 12px;
+}
+
+.diary-card .day-strip {
+  margin-top: 8px;
+}
+
+.diary-card .day-chip {
+  min-height: 54px;
+}
+
+.diary-commands {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin: 10px 0;
+}
+
+.empty-line {
+  min-height: 48px;
+  display: grid;
+  place-items: center;
+  border: 1px dashed var(--line);
+  border-radius: 14px;
+  color: var(--muted);
+  background: rgba(255, 255, 255, 0.02);
+  padding: 10px 12px;
+  text-align: center;
+  font-size: 13px;
+}
+
+.filter-panel {
+  margin-bottom: 12px;
+}
+
+.filter-panel > summary {
+  min-height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  list-style: none;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.filter-panel > summary::-webkit-details-marker {
+  display: none;
+}
+
+.filter-panel > summary::after {
+  content: "+";
+  width: 24px;
+  height: 24px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  color: var(--green);
+}
+
+.filter-panel[open] > summary::after {
+  content: "−";
+}
+
+.filter-panel .segmented {
+  margin-top: 8px;
+}
+
+@media (max-width: 420px) {
+  .summary-top strong {
+    font-size: 25px;
+  }
+
+  .summary-macros strong {
+    font-size: 12px;
+  }
+
+  .diary-commands {
+    grid-template-columns: 1fr;
+  }
+}
+
+.calculation-screen {
+  min-height: calc(100vh - 80px);
+  display: grid;
+  place-items: center;
+  padding: 18px;
+}
+
+.calc-card {
+  width: min(100%, 360px);
+  border: 1px solid var(--line);
+  border-radius: 22px;
+  padding: 22px;
+  background: var(--panel);
+  text-align: left;
+}
+
+.calc-mark {
+  width: 46px;
+  height: 46px;
+  display: grid;
+  place-items: center;
+  border-radius: 14px;
+  color: #07110d;
+  background: var(--green);
+  font-weight: 950;
+}
+
+.calc-card .eyebrow {
+  margin-top: 18px;
+}
+
+.calc-card h2 {
+  margin: 0;
+  font-size: 28px;
+  line-height: 1.05;
+}
+
+.calc-summary {
+  margin-top: 18px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 14px;
+  background: var(--panel-strong);
+}
+
+.calc-summary strong,
+.calc-summary span {
+  display: block;
+}
+
+.calc-summary strong {
+  font-size: 24px;
+}
+
+.calc-summary span {
+  margin-top: 5px;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 850;
+}
+
+.calc-card .calc-progress {
+  width: 100%;
+  height: 6px;
+  margin-top: 16px;
+  border: 0;
+  background: var(--panel-strong);
+}
+
+.calc-card .calc-progress i {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--green);
+  animation: calm-progress 2.1s ease-out forwards;
+  transform-origin: left center;
+}
+
+.calc-card .calc-progress i::after {
+  display: none;
+}
+
+.calc-card .calc-steps {
+  justify-content: flex-start;
+  margin-top: 14px;
+}
+
+.calc-card .calc-steps span {
+  padding: 7px 9px;
+  background: var(--panel-strong);
+}
+
+.calc-card .calc-note {
+  margin-top: 14px;
+}
+
+@keyframes calm-progress {
+  from { transform: scaleX(0.08); }
+  to { transform: scaleX(1); }
+}
+
 /* Minimal product pass: keeps every feature, removes visual noise. */
 :root {
   --bg: #080b0f;

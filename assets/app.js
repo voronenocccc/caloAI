@@ -377,57 +377,62 @@ function homeView(total, target, progress) {
   const current = selectedDate();
   const water = waterByDate();
   const subscription = subscriptionStatus();
+  const remaining = Math.round(Number(target.kcal || 0) - Number(total.kcal || 0));
   return `
     ${subscription.active ? "" : subscriptionGate()}
-    <section class="hero">
-      <div class="hero-head">
+    <section class="summary-card">
+      <div class="summary-top">
         <div>
-          <p class="eyebrow">${selectedDateKey === todayKey() ? t("today") : dayTitle(current)}</p>
-          <h2>${fmt(total.kcal)} ${ui("из", "of")} ${fmt(target.kcal)} ${ui("ккал", "kcal")}</h2>
-          ${progress.over > 0 || !state.profile ? `<p class="hero-copy">${progress.over > 0 ? `${ui("Переел дневную норму на", "Over daily target by")} ${fmt(progress.over)} ${ui("ккал", "kcal")}.` : ui("Заполни профиль, чтобы EliteCalorie рассчитал твою норму.", "Fill in your profile so EliteCalorie can calculate your target.")}</p>` : ""}
+          <span>${selectedDateKey === todayKey() ? t("today") : dayTitle(current)}</span>
+          <strong>${fmt(total.kcal)} / ${fmt(target.kcal)} ${ui("ккал", "kcal")}</strong>
+          <em>${remaining >= 0 ? `${fmt(remaining)} ${ui("осталось", "left")}` : `${fmt(Math.abs(remaining))} ${ui("сверх", "over")}`}</em>
         </div>
-        <div class="ring ${progress.over > 0 ? "over" : ""}" style="--value:${progress.visual}">
-          <div class="ring-inner"><strong>${progress.percent}%</strong><span>${progress.over > 0 ? t("overPlan") : t("plan")}</span>${progress.over > 0 ? `<em>+${fmt(progress.over)} ${ui("ккал", "kcal")}</em>` : ""}</div>
-        </div>
+        <b class="${progress.over > 0 ? "over" : ""}">${progress.percent}%</b>
       </div>
-      <div class="macro-grid">
-        ${macro(ui("Белки", "Protein"), total.protein, target.protein, ui("г", "g"))}
-        ${macro(ui("Жиры", "Fat"), total.fat, target.fat, ui("г", "g"))}
-        ${macro(ui("Углеводы", "Carbs"), total.carbs, target.carbs, ui("г", "g"))}
+      <div class="summary-progress ${progress.over > 0 ? "over" : ""}"><i style="width:${progress.visual}%"></i></div>
+      <div class="summary-macros">
+        ${summaryMacro(ui("Б", "P"), total.protein, target.protein)}
+        ${summaryMacro(ui("Ж", "F"), total.fat, target.fat)}
+        ${summaryMacro(ui("У", "C"), total.carbs, target.carbs)}
       </div>
-      <div class="hero-subline">
+      <div class="summary-status">
         <span>${subscriptionLabel(subscription)}</span>
-        <button data-tab-jump="profile">${ui("Управлять", "Manage")}</button>
+        <button data-tab-jump="profile">${ui("Профиль", "Profile")}</button>
       </div>
     </section>
     ${todayToolsView(total, target, water)}
-    <section class="section">
-      <div class="section-title">
-        <div><h2>${t("diary")}</h2><p>${dayTitle(current)} · ${totalEntries ? `${totalEntries} ${ui("записей", "entries")}` : ui("пока пусто", "empty")}</p></div>
-        <div class="title-actions">
-          <button class="pill" data-action="open-calendar">${ui("Календарь", "Calendar")}</button>
-          <button class="pill" data-action="copy-day-tomorrow">${t("dayToTomorrow")}</button>
-          <button class="pill" data-action="clear-day">${t("clear")}</button>
+    <section class="diary-card">
+      <div class="diary-head">
+        <div>
+          <h2>${t("diary")}</h2>
+          <p>${dayTitle(current)} · ${totalEntries ? `${totalEntries} ${ui("записей", "entries")}` : ui("пока пусто", "empty")}</p>
         </div>
+        <button data-action="open-calendar">${ui("Дата", "Date")}</button>
       </div>
-      <div class="calendar-card">
-        <div class="calendar-nav">
-          <button data-action="shift-week" data-days="-7" aria-label="${ui("Предыдущая неделя", "Previous week")}">←</button>
-          <button class="calendar-current" data-action="open-calendar" type="button">
-            <span>${ui("Неделя", "Week")}</span>
-            <strong>${weekRangeTitle()}</strong>
-          </button>
-          <button data-action="shift-week" data-days="7" aria-label="${ui("Следующая неделя", "Next week")}">→</button>
-        </div>
+      <div class="week-control">
+        <button data-action="shift-week" data-days="-7" aria-label="${ui("Предыдущая неделя", "Previous week")}">←</button>
+        <strong>${weekRangeTitle()}</strong>
+        <button data-action="shift-week" data-days="7" aria-label="${ui("Следующая неделя", "Next week")}">→</button>
+      </div>
         <div class="day-strip">
           ${weekDays().map(dayButton).join("")}
         </div>
-      </div>
+      ${entries.length ? `
+        <div class="diary-commands">
+          <button data-action="copy-day-tomorrow">${t("dayToTomorrow")}</button>
+          <button data-action="clear-day">${t("clear")}</button>
+        </div>
+      ` : ""}
       <div class="stack">
-        ${entries.length ? entries.map(entryRow).join("") : `<div class="card empty">${t("emptyDiary")}</div>`}
+        ${entries.length ? entries.map(entryRow).join("") : `<div class="empty-line">${t("emptyDiary")}</div>`}
       </div>
     </section>
   `;
+}
+
+function summaryMacro(label, current, target) {
+  const info = progressInfo(current, target);
+  return `<div class="${info.over > 0 ? "over" : ""}"><span>${label}</span><strong>${fmt(current)} / ${fmt(target)} ${ui("г", "g")}</strong></div>`;
 }
 
 function todayToolsView(total, target, water) {
@@ -567,7 +572,13 @@ function searchView() {
       <div class="section-title">
         <div><h2>${t("food")}</h2><p>${t("foodCaption")}</p></div>
       </div>
-      <div class="library-console compact">
+      <div class="searchbar">
+        <div class="field"><input id="search" placeholder="${t("searchPlaceholder")}" autocomplete="off" /></div>
+        <button class="icon-button" data-action="scan-barcode" title="Сканировать штрихкод">${icon("i-barcode")}</button>
+        <button class="icon-button" data-action="custom-food" title="Добавить продукт">${icon("i-plus")}</button>
+      </div>
+      <details class="library-console compact filter-panel">
+        <summary>${ui("Фильтры и библиотека", "Filters and library")}</summary>
         <div class="segmented" role="group" aria-label="Режим библиотеки">
           ${libraryModeButton("all", ui("Все", "All"))}
           ${libraryModeButton("general", ui("Общая", "Shared"))}
@@ -576,12 +587,7 @@ function searchView() {
         <div class="category-strip">
           ${libraryCategories().map(category => `<button class="category-chip ${searchCategory === category.id ? "active" : ""}" data-category="${category.id}">${category.label}</button>`).join("")}
         </div>
-      </div>
-      <div class="searchbar">
-        <div class="field"><input id="search" placeholder="${t("searchPlaceholder")}" autocomplete="off" /></div>
-        <button class="icon-button" data-action="scan-barcode" title="Сканировать штрихкод">${icon("i-barcode")}</button>
-        <button class="icon-button" data-action="custom-food" title="Добавить продукт">${icon("i-plus")}</button>
-      </div>
+      </details>
       ${quick.length ? `<div class="quick-picks">${quick.map(food => `<button data-food='${escapeAttr(JSON.stringify(food))}'><span>${escapeHtml(food.name)}</span><em>${fmt(food.kcal)} ${ui("ккал", "kcal")}</em></button>`).join("")}</div>` : ""}
       <div id="results" class="stack food-results"></div>
     </section>
@@ -1859,7 +1865,7 @@ function saveProfile(event) {
   state.account.name = profile.accountName || state.account.name;
   saveMeasurement(profile);
   saveState();
-  showRegistrationLoading(profile.plan?.note);
+  showRegistrationLoading(profile);
 }
 
 function saveMeasurementsOnly(event) {
@@ -1934,28 +1940,27 @@ function optionalNumber(value) {
   return text === "" ? "" : Number(text);
 }
 
-function showRegistrationLoading(note) {
+function showRegistrationLoading(profile) {
+  const note = profile?.plan?.note;
+  const target = profile?.targets || targets();
   $app.innerHTML = `
     <section class="calculation-screen">
-      <div class="elite-loader">
-        <div class="calc-stage">
-          <div class="calc-orbit"></div>
-          <div class="calc-orbit second"></div>
-          <div class="calc-scan"></div>
-          <div class="brand-mark">E</div>
+      <div class="calc-card">
+        <div class="calc-mark">E</div>
+        <p class="eyebrow">${ui("Расчет нормы", "Target calculation")}</p>
+        <h2>${ui("Готовлю план", "Preparing plan")}</h2>
+        <div class="calc-summary">
+          <strong>${fmt(target.kcal)} ${ui("ккал", "kcal")}</strong>
+          <span>${ui("Б", "P")} ${fmt(target.protein)} · ${ui("Ж", "F")} ${fmt(target.fat)} · ${ui("У", "C")} ${fmt(target.carbs)}</span>
         </div>
-        <div class="calc-pulse-lines"><i></i><i></i><i></i></div>
+        <div class="calc-progress"><i></i></div>
+        <div class="calc-steps">
+          <span>${ui("Профиль", "Profile")}</span>
+          <span>${ui("Цель", "Goal")}</span>
+          <span>${ui("КБЖУ", "Macros")}</span>
+        </div>
+        ${note ? `<p class="calc-note">${escapeHtml(note)}</p>` : `<p class="calc-note">${ui("Безопасный темп и дневная норма уже рассчитаны.", "Safe pace and daily target are ready.")}</p>`}
       </div>
-      <p class="eyebrow">EliteCalorie Intelligence</p>
-      <h2>${ui("Собираю персональный план", "Building your personal plan")}</h2>
-      <div class="calc-steps">
-        <span>${ui("Метаболизм", "Metabolism")}</span>
-        <span>${ui("Цель", "Goal")}</span>
-        <span>${ui("Активность", "Activity")}</span>
-        <span>${ui("КБЖУ", "Macros")}</span>
-      </div>
-      <div class="calc-progress"><i></i></div>
-      ${note ? `<p class="calc-note">${escapeHtml(note)}</p>` : `<p class="calc-note">${ui("План готовится под ваш темп, вес и активность.", "The plan is tuned to your pace, weight, and activity.")}</p>`}
     </section>
   `;
   setTimeout(() => {
@@ -1966,7 +1971,7 @@ function showRegistrationLoading(note) {
     } else {
       toast("Норма КБЖУ рассчитана");
     }
-  }, 4300);
+  }, 2300);
 }
 
 function openPlanNotice(note) {
