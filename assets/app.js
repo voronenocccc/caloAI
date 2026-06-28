@@ -399,8 +399,8 @@ function homeView(total, target, progress) {
         <span>${subscriptionLabel(subscription)}</span>
         <button data-tab-jump="profile">${ui("Профиль", "Profile")}</button>
       </div>
+      ${todayToolsView(total, target, water)}
     </section>
-    ${todayToolsView(total, target, water)}
     <section class="diary-card">
       <div class="diary-head">
         <div>
@@ -439,7 +439,7 @@ function todayToolsView(total, target, water) {
   const remaining = Math.round(Number(target.kcal || 0) - Number(total.kcal || 0));
   const snack = snackSuggestions(remaining)[0];
   return `
-    <section class="tool-panel">
+    <div class="summary-tools">
       <div class="tool-actions">
         <button data-tab-jump="search">${icon("i-search")}<span>${ui("Еда", "Food")}</span></button>
         <button data-tab-jump="photo">${icon("i-camera")}<span>${ui("Фото", "Photo")}</span></button>
@@ -461,7 +461,7 @@ function todayToolsView(total, target, water) {
           ${snack ? `<button class="ghost" data-food='${escapeAttr(JSON.stringify({ ...snack.food, defaultGrams: snack.grams }))}'>${ui("Взять", "Add")}</button>` : `<button class="ghost" data-tab-jump="search">${ui("Найти", "Find")}</button>`}
         </div>
       </div>
-    </section>
+    </div>
   `;
 }
 
@@ -566,7 +566,7 @@ function entryRow(item) {
 }
 
 function searchView() {
-  const quick = favoriteQuickFoods();
+  const filtersOpen = searchMode !== "all" || searchCategory !== "all";
   return `
     <section class="section">
       <div class="section-title">
@@ -577,7 +577,7 @@ function searchView() {
         <button class="icon-button" data-action="scan-barcode" title="Сканировать штрихкод">${icon("i-barcode")}</button>
         <button class="icon-button" data-action="custom-food" title="Добавить продукт">${icon("i-plus")}</button>
       </div>
-      <details class="library-console compact filter-panel">
+      <details class="library-console compact filter-panel" ${filtersOpen ? "open" : ""}>
         <summary>${ui("Фильтры и библиотека", "Filters and library")}</summary>
         <div class="segmented" role="group" aria-label="Режим библиотеки">
           ${libraryModeButton("all", ui("Все", "All"))}
@@ -588,7 +588,7 @@ function searchView() {
           ${libraryCategories().map(category => `<button class="category-chip ${searchCategory === category.id ? "active" : ""}" data-category="${category.id}">${category.label}</button>`).join("")}
         </div>
       </details>
-      ${quick.length ? `<div class="quick-picks">${quick.map(food => `<button data-food='${escapeAttr(JSON.stringify(food))}'><span>${escapeHtml(food.name)}</span><em>${fmt(food.kcal)} ${ui("ккал", "kcal")}</em></button>`).join("")}</div>` : ""}
+      <div id="results-meta" class="results-meta"></div>
       <div id="results" class="stack food-results"></div>
     </section>
   `;
@@ -596,6 +596,15 @@ function searchView() {
 
 function libraryModeButton(id, label) {
   return `<button class="${searchMode === id ? "active" : ""}" data-library-mode="${id}">${label}</button>`;
+}
+
+function libraryModeLabel(id = searchMode) {
+  const labels = {
+    all: ui("вся база", "all foods"),
+    general: ui("общая база", "shared library"),
+    personal: ui("моя библиотека", "my library")
+  };
+  return labels[id] || labels.all;
 }
 
 function libraryCategories() {
@@ -608,6 +617,10 @@ function libraryCategories() {
     { id: "snacks", label: ui("Снеки", "Snacks") },
     { id: "drinks", label: ui("Напитки", "Drinks") }
   ];
+}
+
+function libraryCategoryLabel(id = searchCategory) {
+  return libraryCategories().find(category => category.id === id)?.label || ui("Все", "All");
 }
 
 function favoriteQuickFoods() {
@@ -708,18 +721,57 @@ function profilePaneButton(id, label) {
   return `<button class="${profilePane === id ? "active" : ""}" data-profile-pane="${id}">${label}</button>`;
 }
 
+function accountOverview(plan) {
+  const target = targets();
+  const status = subscriptionStatus();
+  const hasProfile = Boolean(state.profile);
+  const name = state.account?.name || "Аккаунт EliteCalorie";
+  const handle = state.account?.username ? `@${escapeHtml(state.account.username)}` : ui("данные хранятся в приложении", "data is saved in the app");
+  return `
+    <section class="account-overview">
+      <div class="account-main">
+        <div class="profile-avatar">${escapeHtml(name.trim().slice(0, 1).toUpperCase() || "E")}</div>
+        <div>
+          <span>${ui("Личный кабинет", "Account")}</span>
+          <strong>${escapeHtml(name)}</strong>
+          <p>${handle}</p>
+        </div>
+        <b>${status.kind === "lifetime" ? ui("Навсегда", "Forever") : status.kind === "premium" ? "Premium" : status.kind === "trial" ? ui("Пробный", "Trial") : ui("Нет", "None")}</b>
+      </div>
+      ${hasProfile ? `
+        <div class="account-targets">
+          ${accountMetric(ui("Ккал", "Kcal"), fmt(target.kcal))}
+          ${accountMetric(ui("Белок", "Protein"), fmt(target.protein))}
+          ${accountMetric(ui("Жиры", "Fat"), fmt(target.fat))}
+          ${accountMetric(ui("Углеводы", "Carbs"), fmt(target.carbs))}
+        </div>
+        <p class="account-note">${planSummary(plan)}</p>
+        ${plan?.note ? `<em>${escapeHtml(plan.note)}</em>` : ""}
+      ` : `
+        <div class="account-empty">
+          <strong>${ui("Заполни профиль один раз", "Set up your profile once")}</strong>
+          <span>${ui("После сохранения здесь появится дневная норма и цель.", "After saving, your daily target and goal will appear here.")}</span>
+        </div>
+      `}
+    </section>
+  `;
+}
+
+function accountMetric(label, value) {
+  return `<div><span>${label}</span><strong>${value}</strong></div>`;
+}
+
 function accountPane(p) {
   const plan = state.profile?.plan;
   const setupOpen = state.profile ? "" : "open";
   return `
+    ${accountOverview(plan)}
     ${subscriptionPanel()}
-    <form id="profile-form" class="profile-panel stack">
-      <div class="profile-hero">
-        <div class="profile-avatar">${escapeHtml((state.account?.name || "E").trim().slice(0, 1).toUpperCase())}</div>
+    <form id="profile-form" class="profile-panel stack settings-panel">
+      <div class="settings-head">
         <div>
-          <span>${ui("Личный кабинет", "Personal cabinet")}</span>
-          <strong>${escapeHtml(state.account?.name || "Аккаунт EliteCalorie")}</strong>
-          <p>${state.account?.username ? `@${escapeHtml(state.account.username)}` : ui("Дневник, продукты и замеры сохраняются на этом устройстве.", "Diary, foods, and measurements are saved on this device.")}</p>
+          <strong>${ui("Настройки профиля", "Profile settings")}</strong>
+          <span>${ui("изменяй только то, что реально поменялось", "edit only what has changed")}</span>
         </div>
       </div>
 
@@ -766,14 +818,6 @@ function accountPane(p) {
       </details>
       <button class="button">${t("saveProfile")}</button>
     </form>
-    ${state.profile ? `
-      <div class="card section plan-card">
-        <span>${ui("Персональный план", "Personal plan")}</span>
-        <h3>${targets().kcal} ${ui("ккал", "kcal")} · ${ui("Б", "P")} ${targets().protein} · ${ui("Ж", "F")} ${targets().fat} · ${ui("У", "C")} ${targets().carbs}</h3>
-        <p>${planSummary(plan)}</p>
-        ${plan?.note ? `<em>${escapeHtml(plan.note)}</em>` : ""}
-      </div>
-    ` : ""}
   `;
 }
 
@@ -1133,7 +1177,6 @@ function bind() {
   document.querySelector("#promo-form")?.addEventListener("submit", activatePromoCode);
   document.querySelector("[data-action='analyze-photo']")?.addEventListener("click", analyzePhoto);
   document.querySelectorAll(".library-chip[data-food]").forEach(btn => btn.addEventListener("click", () => openAddFood(JSON.parse(btn.dataset.food))));
-  document.querySelectorAll(".quick-picks [data-food]").forEach(btn => btn.addEventListener("click", () => openAddFood(JSON.parse(btn.dataset.food))));
   document.querySelectorAll(".tool-line [data-food]").forEach(btn => btn.addEventListener("click", () => openAddFood(JSON.parse(btn.dataset.food))));
   document.querySelectorAll(".snack-list [data-food]").forEach(btn => btn.addEventListener("click", () => {
     const food = JSON.parse(btn.dataset.food);
@@ -1388,20 +1431,59 @@ function per100FromEntry(entry) {
 async function runSearch() {
   const q = document.querySelector("#search")?.value.trim().toLowerCase() || "";
   const results = document.querySelector("#results");
+  const meta = document.querySelector("#results-meta");
   if (!results) return;
   const local = localFoodPool()
     .filter(food => filterFood(food, q))
     .slice(0, 35);
 
-  results.innerHTML = local.map(foodRow).join("") || `<div class="card empty">${ui("Начни вводить название продукта.", "Start typing a food name.")}</div>`;
+  updateResultsMeta(meta, q, local.length);
+  results.innerHTML = local.map(foodRow).join("") || emptyFoodSearch(q);
   results.querySelectorAll("[data-food]").forEach(btn => btn.addEventListener("click", () => openAddFood(JSON.parse(btn.dataset.food))));
 
   if (q.length >= 3 && searchMode !== "personal") {
     remoteCache = await searchExternalFood(q);
     const merged = [...local, ...remoteCache.filter(food => filterFood(food, q))].slice(0, 45);
-    results.innerHTML = merged.map(foodRow).join("") || `<div class="card empty">${ui("Не нашел. Добавь продукт вручную.", "No match. Add it manually.")}</div>`;
+    updateResultsMeta(meta, q, merged.length);
+    results.innerHTML = merged.map(foodRow).join("") || emptyFoodSearch(q);
     results.querySelectorAll("[data-food]").forEach(btn => btn.addEventListener("click", () => openAddFood(JSON.parse(btn.dataset.food))));
   }
+}
+
+function updateResultsMeta(meta, query, count) {
+  if (!meta) return;
+  const mode = libraryModeLabel();
+  const category = searchCategory === "all" ? ui("все категории", "all categories") : libraryCategoryLabel();
+  const title = query
+    ? `${ui("Поиск", "Search")}: "${escapeHtml(query)}"`
+    : searchCategory === "all" && searchMode === "all"
+      ? ui("Популярное в базе", "Popular foods")
+      : `${mode} · ${category}`;
+  meta.innerHTML = `
+    <div>
+      <strong>${title}</strong>
+      <span>${fmt(count)} ${ui("продуктов показано", "foods shown")}</span>
+    </div>
+    ${(searchMode !== "all" || searchCategory !== "all" || query) ? `<button type="button" data-action="clear-food-filters">${ui("Сбросить", "Reset")}</button>` : ""}
+  `;
+  meta.querySelector("[data-action='clear-food-filters']")?.addEventListener("click", () => {
+    searchMode = "all";
+    searchCategory = "all";
+    state.searchMode = searchMode;
+    state.searchCategory = searchCategory;
+    saveState();
+    render();
+  });
+}
+
+function emptyFoodSearch(query) {
+  if (searchMode === "personal") {
+    return `<div class="card empty">${ui("В личной библиотеке пока пусто. Добавь свое блюдо через плюс.", "Your personal library is empty. Add a food with plus.")}</div>`;
+  }
+  if (query) {
+    return `<div class="card empty">${ui("Не нашел. Добавь продукт вручную через плюс.", "No match. Add it manually with plus.")}</div>`;
+  }
+  return `<div class="card empty">${ui("В этом фильтре пока нет продуктов.", "No foods in this filter yet.")}</div>`;
 }
 
 function localFoodPool() {
