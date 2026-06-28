@@ -384,7 +384,7 @@ function homeView(total, target, progress) {
         <div>
           <p class="eyebrow">${selectedDateKey === todayKey() ? t("today") : dayTitle(current)}</p>
           <h2>${fmt(total.kcal)} ${ui("из", "of")} ${fmt(target.kcal)} ${ui("ккал", "kcal")}</h2>
-          <p class="hero-copy">${progress.over > 0 ? `${ui("Переел дневную норму на", "Over daily target by")} ${fmt(progress.over)} ${ui("ккал", "kcal")}.` : (state.profile ? ui("Дневная цель обновляется после изменения анкеты.", "Daily target updates after profile changes.") : ui("Заполни профиль, чтобы EliteCalorie рассчитал твою норму.", "Fill in your profile so EliteCalorie can calculate your target."))}</p>
+          ${progress.over > 0 || !state.profile ? `<p class="hero-copy">${progress.over > 0 ? `${ui("Переел дневную норму на", "Over daily target by")} ${fmt(progress.over)} ${ui("ккал", "kcal")}.` : ui("Заполни профиль, чтобы EliteCalorie рассчитал твою норму.", "Fill in your profile so EliteCalorie can calculate your target.")}</p>` : ""}
         </div>
         <div class="ring ${progress.over > 0 ? "over" : ""}" style="--value:${progress.visual}">
           <div class="ring-inner"><strong>${progress.percent}%</strong><span>${progress.over > 0 ? t("overPlan") : t("plan")}</span>${progress.over > 0 ? `<em>+${fmt(progress.over)} ${ui("ккал", "kcal")}</em>` : ""}</div>
@@ -400,13 +400,13 @@ function homeView(total, target, progress) {
         <button data-tab-jump="profile">${ui("Управлять", "Manage")}</button>
       </div>
     </section>
-    ${waterView(water)}
-    ${snackView(total, target)}
+    ${todayToolsView(total, target, water)}
     <section class="section">
       <div class="section-title">
         <div><h2>${t("diary")}</h2><p>${dayTitle(current)} · ${totalEntries ? `${totalEntries} ${ui("записей", "entries")}` : ui("пока пусто", "empty")}</p></div>
         <div class="title-actions">
           <button class="pill" data-action="open-calendar">${ui("Календарь", "Calendar")}</button>
+          <button class="pill" data-action="copy-day-tomorrow">${t("dayToTomorrow")}</button>
           <button class="pill" data-action="clear-day">${t("clear")}</button>
         </div>
       </div>
@@ -423,12 +423,38 @@ function homeView(total, target, progress) {
           ${weekDays().map(dayButton).join("")}
         </div>
       </div>
-      <div class="diary-toolbar">
-        <strong>${t("timeFormat")}</strong>
-        <button class="pill" data-action="copy-day-tomorrow">${t("dayToTomorrow")}</button>
-      </div>
       <div class="stack">
         ${entries.length ? entries.map(entryRow).join("") : `<div class="card empty">${t("emptyDiary")}</div>`}
+      </div>
+    </section>
+  `;
+}
+
+function todayToolsView(total, target, water) {
+  const remaining = Math.round(Number(target.kcal || 0) - Number(total.kcal || 0));
+  const snack = snackSuggestions(remaining)[0];
+  return `
+    <section class="tool-panel">
+      <div class="tool-actions">
+        <button data-tab-jump="search">${icon("i-search")}<span>${ui("Еда", "Food")}</span></button>
+        <button data-tab-jump="photo">${icon("i-camera")}<span>${ui("Фото", "Photo")}</span></button>
+        <button data-action="quick-barcode">${icon("i-barcode")}<span>${ui("Код", "Code")}</span></button>
+      </div>
+      <div class="tool-lines">
+        <div class="tool-line">
+          <div>
+            <span>${ui("Вода", "Water")}</span>
+            <strong>${fmt(water.ml)} / ${fmt(waterTarget())} ${ui("мл", "ml")}</strong>
+          </div>
+          <button data-water="250">+250</button>
+        </div>
+        <div class="tool-line">
+          <div>
+            <span>${ui("Перекус", "Snack")}</span>
+            <strong>${remaining > 0 ? `${remaining} ${ui("ккал осталось", "kcal left")}` : ui("лимит закрыт", "target reached")}</strong>
+          </div>
+          ${snack ? `<button class="ghost" data-food='${escapeAttr(JSON.stringify({ ...snack.food, defaultGrams: snack.grams }))}'>${ui("Взять", "Add")}</button>` : `<button class="ghost" data-tab-jump="search">${ui("Найти", "Find")}</button>`}
+        </div>
       </div>
     </section>
   `;
@@ -535,18 +561,13 @@ function entryRow(item) {
 }
 
 function searchView() {
-  const library = state.customFoods || [];
   const quick = favoriteQuickFoods();
   return `
     <section class="section">
       <div class="section-title">
         <div><h2>${t("food")}</h2><p>${t("foodCaption")}</p></div>
       </div>
-      <div class="library-console">
-        <div class="library-metrics">
-          <div><span>${t("generalLibrary")}</span><strong>${FOOD_DB.length}+</strong></div>
-          <div><span>${t("personalLibrary")}</span><strong>${library.length}</strong></div>
-        </div>
+      <div class="library-console compact">
         <div class="segmented" role="group" aria-label="Режим библиотеки">
           ${libraryModeButton("all", ui("Все", "All"))}
           ${libraryModeButton("general", ui("Общая", "Shared"))}
@@ -555,14 +576,6 @@ function searchView() {
         <div class="category-strip">
           ${libraryCategories().map(category => `<button class="category-chip ${searchCategory === category.id ? "active" : ""}" data-category="${category.id}">${category.label}</button>`).join("")}
         </div>
-        ${library.length ? `
-          <div class="personal-shelf">
-            <div><span>${ui("Быстро из моей базы", "Quick from my library")}</span><button data-library-mode="personal">${ui("Открыть", "Open")}</button></div>
-            <div class="library-list">
-              ${library.slice(0, 10).map(food => `<button class="library-chip" data-food='${escapeAttr(JSON.stringify(food))}'>${escapeHtml(food.name)}</button>`).join("")}
-            </div>
-          </div>
-        ` : ""}
       </div>
       <div class="searchbar">
         <div class="field"><input id="search" placeholder="${t("searchPlaceholder")}" autocomplete="off" /></div>
@@ -691,6 +704,7 @@ function profilePaneButton(id, label) {
 
 function accountPane(p) {
   const plan = state.profile?.plan;
+  const setupOpen = state.profile ? "" : "open";
   return `
     ${subscriptionPanel()}
     <form id="profile-form" class="profile-panel stack">
@@ -703,10 +717,10 @@ function accountPane(p) {
         </div>
       </div>
 
-      <div class="form-section">
-        <div class="form-section-head">
+      <details class="form-section profile-fold" ${setupOpen}>
+        <summary class="form-section-head">
           <div><strong>${ui("Основное", "Basics")}</strong><span>${ui("данные для расчета обмена", "used for metabolism calculation")}</span></div>
-        </div>
+        </summary>
         <div class="field"><label>${ui("Имя аккаунта", "Account name")}</label><input name="accountName" value="${escapeAttr(p.accountName || state.account?.name || "")}" placeholder="${ui("Ваше имя", "Your name")}" required /></div>
         <div class="form-grid">
           ${selectField("language", "Язык / Language", [["ru", "Русский"], ["en", "English"]], p.language || state.language || "ru")}
@@ -714,12 +728,12 @@ function accountPane(p) {
           ${numberField("age", ui("Возраст", "Age"), p.age, "28")}
           ${numberField("height", ui("Рост, см", "Height, cm"), p.height, "178")}
         </div>
-      </div>
+      </details>
 
-      <div class="form-section">
-        <div class="form-section-head">
+      <details class="form-section profile-fold" ${setupOpen}>
+        <summary class="form-section-head">
           <div><strong>${ui("Цель и активность", "Goal and activity")}</strong><span>${ui("на этом строится безопасный темп", "sets a safe pace")}</span></div>
-        </div>
+        </summary>
         <div class="form-grid">
           ${numberField("weight", ui("Текущий вес, кг", "Current weight, kg"), p.weight, "72")}
           ${numberField("targetWeight", ui("Целевой вес, кг", "Target weight, kg"), p.targetWeight, "68")}
@@ -728,11 +742,11 @@ function accountPane(p) {
           ${selectField("activity", ui("Активность", "Activity"), activityOptions(), p.activity)}
           ${selectField("goal", ui("Цель", "Goal"), goalOptions(), p.goal)}
         </div>
-      </div>
-      <div class="form-section">
-        <div class="form-section-head">
+      </details>
+      <details class="form-section profile-fold">
+        <summary class="form-section-head">
           <div><strong>${ui("Своя норма КБЖУ", "Custom macro target")}</strong><span>${ui("если хочешь выставить значения вручную", "set your own numbers manually")}</span></div>
-        </div>
+        </summary>
         <label class="toggle-row">
           <input name="manualEnabled" type="checkbox" ${p.manualTargets?.enabled ? "checked" : ""} />
           <span>${ui("Использовать мои значения вместо расчета", "Use my values instead of calculated target")}</span>
@@ -743,7 +757,7 @@ function accountPane(p) {
           ${numberField("manualFat", ui("Жиры, г", "Fat, g"), p.manualTargets?.fat || targets().fat, "70")}
           ${numberField("manualCarbs", ui("Углеводы, г", "Carbs, g"), p.manualTargets?.carbs || targets().carbs, "230")}
         </div>
-      </div>
+      </details>
       <button class="button">${t("saveProfile")}</button>
     </form>
     ${state.profile ? `
@@ -760,23 +774,28 @@ function accountPane(p) {
 function subscriptionPanel() {
   const status = subscriptionStatus();
   return `
-    <section class="subscription-panel">
-      <div>
+    <section class="subscription-panel compact-sub">
+      <div class="subscription-row">
+        <div>
         <span>${status.kind === "trial" ? ui("Пробный период", "Trial") : status.kind === "premium" || status.kind === "lifetime" ? "Premium" : ui("Подписка", "Subscription")}</span>
         <strong>${status.kind === "lifetime" ? ui("навсегда", "lifetime") : status.active ? `${status.daysLeft} ${ui("дн. осталось", "days left")}` : ui("Нужна оплата", "Payment required")}</strong>
         <p>${ui("Первые 3 дня бесплатно. Дальше Premium через Telegram Stars.", "First 3 days are free. Then Premium via Telegram Stars.")}</p>
       </div>
-      <div class="subscription-actions">
-        <button data-subscribe-plan="month">50 ⭐ / ${ui("месяц", "month")}</button>
-        <button data-subscribe-plan="quarter">100 ⭐ / 3 ${ui("мес.", "mo")}</button>
       </div>
-      <form id="promo-form" class="promo-form">
-        <label>${ui("Промокод", "Promo code")}</label>
-        <div>
-          <input name="promo" autocomplete="one-time-code" placeholder="${ui("Введи код", "Enter code")}" />
-          <button>${ui("Активировать", "Activate")}</button>
+      <details class="sub-details" ${status.active ? "" : "open"}>
+        <summary>${ui("Оплата и промокод", "Payment and promo")}</summary>
+        <div class="subscription-actions">
+          <button data-subscribe-plan="month">50 ⭐ / ${ui("месяц", "month")}</button>
+          <button data-subscribe-plan="quarter">100 ⭐ / 3 ${ui("мес.", "mo")}</button>
         </div>
-      </form>
+        <form id="promo-form" class="promo-form">
+          <label>${ui("Промокод", "Promo code")}</label>
+          <div>
+            <input name="promo" autocomplete="one-time-code" placeholder="${ui("Введи код", "Enter code")}" />
+            <button>${ui("Активировать", "Activate")}</button>
+          </div>
+        </form>
+      </details>
     </section>
   `;
 }
@@ -870,10 +889,10 @@ function measurementField(name, label, value, unit = ui("см", "cm")) {
 
 function measurementGroup(title, fields) {
   return `
-    <div class="measure-group">
-      <div class="measure-group-title">${title}</div>
+    <details class="measure-group" ${title === ui("Корпус", "Torso") ? "open" : ""}>
+      <summary class="measure-group-title">${title}</summary>
       <div class="measure-grid accurate">${fields.join("")}</div>
-    </div>
+    </details>
   `;
 }
 
@@ -1076,6 +1095,11 @@ function bind() {
   document.querySelector("#search")?.addEventListener("input", debounce(runSearch, 220));
   document.querySelector("[data-action='custom-food']")?.addEventListener("click", openCustomFood);
   document.querySelector("[data-action='scan-barcode']")?.addEventListener("click", openBarcodeScanner);
+  document.querySelector("[data-action='quick-barcode']")?.addEventListener("click", () => {
+    activeTab = "search";
+    render();
+    setTimeout(openBarcodeScanner, 0);
+  });
   document.querySelector("[data-action='measurement-guide']")?.addEventListener("click", openMeasurementGuide);
   document.querySelector("[data-action='take-photo']")?.addEventListener("click", () => document.querySelector("#photo-camera-input")?.click());
   document.querySelector("[data-action='pick-photo']")?.addEventListener("click", () => document.querySelector("#photo-gallery-input")?.click());
@@ -1104,6 +1128,7 @@ function bind() {
   document.querySelector("[data-action='analyze-photo']")?.addEventListener("click", analyzePhoto);
   document.querySelectorAll(".library-chip[data-food]").forEach(btn => btn.addEventListener("click", () => openAddFood(JSON.parse(btn.dataset.food))));
   document.querySelectorAll(".quick-picks [data-food]").forEach(btn => btn.addEventListener("click", () => openAddFood(JSON.parse(btn.dataset.food))));
+  document.querySelectorAll(".tool-line [data-food]").forEach(btn => btn.addEventListener("click", () => openAddFood(JSON.parse(btn.dataset.food))));
   document.querySelectorAll(".snack-list [data-food]").forEach(btn => btn.addEventListener("click", () => {
     const food = JSON.parse(btn.dataset.food);
     openAddFood(food);

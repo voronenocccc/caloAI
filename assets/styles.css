@@ -2063,3 +2063,643 @@ button {
     width: 100%;
   }
 }
+
+/* Minimal product pass: keeps every feature, removes visual noise. */
+:root {
+  --bg: #080b0f;
+  --panel: #111720;
+  --panel-strong: #151c25;
+  --line: rgba(255, 255, 255, 0.1);
+  --text: #f5f7fa;
+  --muted: #8993a1;
+  --green: #40e6a0;
+  --cyan: #67d8ff;
+  --amber: #f2c86b;
+  --rose: #ff6d85;
+  --shadow: none;
+}
+
+body {
+  background: var(--bg);
+}
+
+.app-shell {
+  padding: 14px 14px 92px;
+}
+
+.topbar {
+  padding: 2px 0 18px;
+}
+
+.brand-mark,
+.splash-mark,
+.profile-avatar {
+  border-radius: 14px;
+  background: var(--green);
+  box-shadow: none;
+}
+
+.brand h1 {
+  font-size: 21px;
+  letter-spacing: 0;
+}
+
+.pill,
+.card,
+.food-row,
+.entry-row,
+.profile-panel,
+.compact-panel,
+.subscription-gate,
+.subscription-panel,
+.library-console,
+.photo-panel,
+.calendar-card,
+.form-section,
+.measure-help-button,
+.modal {
+  box-shadow: none;
+}
+
+.hero {
+  border-radius: 20px;
+  padding: 14px;
+  background: var(--panel);
+  box-shadow: none;
+}
+
+.hero::after {
+  display: none;
+}
+
+.hero-head {
+  grid-template-columns: 1fr auto;
+  gap: 14px;
+}
+
+.hero h2,
+.section-title h2 {
+  font-size: 24px;
+}
+
+.hero-copy {
+  max-width: 260px;
+  color: var(--muted);
+}
+
+.ring {
+  width: 94px;
+}
+
+.ring::before {
+  width: 70px;
+  background: var(--panel);
+}
+
+.ring-inner strong {
+  font-size: 20px;
+}
+
+.macro-grid {
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.macro {
+  padding: 10px;
+}
+
+.macro,
+.compact-panel,
+.subscription-panel,
+.subscription-gate,
+.calendar-card,
+.photo-panel,
+.library-console,
+.card,
+.food-row,
+.entry-row,
+.profile-panel,
+.form-section {
+  border-radius: 16px;
+  background: var(--panel);
+}
+
+.macro,
+.quick-picks button,
+.snack-list button,
+.library-metrics > div,
+.measure-stat-grid div,
+.photo-source,
+.month-grid button,
+.day-chip {
+  background: var(--panel-strong);
+}
+
+.quick-actions {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.quick-actions button {
+  min-width: 0;
+  min-height: 58px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  color: var(--text);
+  background: var(--panel);
+  display: grid;
+  place-items: center;
+  gap: 5px;
+}
+
+.quick-actions span {
+  width: 24px;
+  height: 24px;
+  display: grid;
+  place-items: center;
+  color: var(--green);
+}
+
+.quick-actions svg {
+  width: 19px;
+  height: 19px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+}
+
+.quick-actions strong {
+  max-width: 100%;
+  overflow: hidden;
+  color: var(--text);
+  font-size: 11px;
+  font-weight: 850;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.wellness-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.wellness-grid .compact-panel {
+  margin-top: 0;
+}
+
+.water-actions,
+.subscription-actions,
+.calendar-shortcuts {
+  gap: 6px;
+}
+
+.water-actions button,
+.subscription-actions button,
+.calendar-shortcuts button,
+.hero-subline button,
+.title-actions .pill,
+.calendar-nav button {
+  background: var(--panel-strong);
+}
+
+.snack-list {
+  grid-template-columns: 1fr;
+}
+
+.snack-list button {
+  min-height: 44px;
+  border-radius: 14px;
+}
+
+.calendar-card {
+  padding: 8px;
+}
+
+.calendar-current,
+.calendar-nav > button {
+  background: var(--panel-strong);
+}
+
+.day-chip {
+  min-height: 58px;
+}
+
+.day-chip.active,
+.month-grid button.active,
+.tab.active {
+  border-color: rgba(64, 230, 160, 0.48);
+  color: var(--green);
+  background: rgba(64, 230, 160, 0.1);
+  box-shadow: none;
+}
+
+.diary-toolbar {
+  min-height: 38px;
+}
+
+.entry-row,
+.food-row {
+  border-radius: 15px;
+}
+
+.kcal-chip {
+  color: #07110d;
+  background: var(--green);
+}
+
+.button,
+.segmented button.active,
+.profile-tabs button.active,
+.photo-source span {
+  color: #07110d;
+  background: var(--green);
+  box-shadow: none;
+}
+
+.button.secondary,
+.icon-button,
+.mini-action,
+.field input,
+.field select,
+.field textarea,
+.measure-field input,
+.promo-form input,
+.library-chip,
+.category-chip {
+  background: var(--panel-strong);
+}
+
+.photo-source-actions {
+  grid-template-columns: 1fr 1fr;
+}
+
+.photo-source {
+  min-height: 86px;
+  border-radius: 16px;
+}
+
+.photo-source.primary {
+  border-color: rgba(64, 230, 160, 0.32);
+  background: rgba(64, 230, 160, 0.08);
+}
+
+.photo-picked,
+.scan-status {
+  background: var(--panel-strong);
+}
+
+.scanner-stage {
+  border-radius: 18px;
+  background: #06080b;
+}
+
+.scanner-frame {
+  border-color: rgba(64, 230, 160, 0.7);
+  box-shadow: 0 0 0 999px rgba(0, 0, 0, 0.14);
+}
+
+.tabs {
+  border-radius: 20px;
+  background: rgba(11, 15, 20, 0.94);
+  box-shadow: none;
+}
+
+.tab {
+  border-radius: 14px;
+}
+
+.modal-backdrop {
+  background: rgba(0, 0, 0, 0.72);
+}
+
+.modal {
+  background: #10161d;
+}
+
+@media (max-width: 420px) {
+  .hero-head {
+    grid-template-columns: 1fr auto;
+  }
+
+  .ring {
+    width: 86px;
+  }
+
+  .wellness-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .quick-actions {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .quick-actions button {
+    min-height: 54px;
+  }
+
+  .quick-actions strong {
+    font-size: 10px;
+  }
+
+  .photo-source-actions,
+  .barcode-manual {
+    grid-template-columns: 1fr;
+  }
+}
+
+.tool-panel {
+  display: grid;
+  gap: 10px;
+  margin-top: 12px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 10px;
+  background: var(--panel);
+}
+
+.hero-subline {
+  margin-top: 12px;
+  padding-top: 10px;
+}
+
+.tool-actions {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.tool-actions button {
+  min-width: 0;
+  min-height: 46px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  color: var(--text);
+  background: var(--panel-strong);
+  font-size: 12px;
+  font-weight: 850;
+}
+
+.tool-actions svg {
+  width: 17px;
+  height: 17px;
+  fill: none;
+  stroke: var(--green);
+  stroke-width: 2;
+}
+
+.tool-lines {
+  display: grid;
+  gap: 1px;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--line);
+}
+
+.tool-line {
+  min-height: 54px;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 10px;
+  align-items: center;
+  padding: 9px 10px;
+  background: var(--panel);
+}
+
+.tool-line span {
+  display: block;
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.tool-line strong {
+  display: block;
+  margin-top: 3px;
+  color: var(--text);
+  font-size: 14px;
+}
+
+.tool-line button {
+  min-width: 58px;
+  min-height: 34px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  color: #07110d;
+  background: var(--green);
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.tool-line button.ghost {
+  color: var(--text);
+  background: var(--panel-strong);
+}
+
+.profile-panel {
+  gap: 8px;
+}
+
+.profile-fold {
+  gap: 0;
+  padding: 0;
+  overflow: hidden;
+}
+
+.profile-fold > summary,
+.measure-group > summary {
+  cursor: pointer;
+  list-style: none;
+}
+
+.profile-fold > summary::-webkit-details-marker,
+.measure-group > summary::-webkit-details-marker {
+  display: none;
+}
+
+.profile-fold .form-section-head {
+  min-height: 54px;
+  padding: 12px;
+  align-items: center;
+}
+
+.profile-fold .form-section-head::after,
+.measure-group-title::after {
+  content: "+";
+  width: 24px;
+  height: 24px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  color: var(--muted);
+  font-size: 16px;
+  font-weight: 900;
+}
+
+.profile-fold[open] .form-section-head::after,
+.measure-group[open] .measure-group-title::after {
+  content: "−";
+  color: var(--green);
+}
+
+.profile-fold > .field,
+.profile-fold > .form-grid,
+.profile-fold > .toggle-row {
+  margin: 0 12px 12px;
+}
+
+.measure-group {
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 0;
+  overflow: hidden;
+  background: var(--panel);
+}
+
+.measure-group + .measure-group {
+  margin-top: 8px;
+  padding-top: 0;
+  border-top: 1px solid var(--line);
+}
+
+.measure-group-title {
+  min-height: 50px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 12px;
+  color: var(--text);
+  background: var(--panel);
+}
+
+.measure-group .measure-grid {
+  padding: 0 12px 12px;
+}
+
+.library-console.compact {
+  padding: 8px;
+}
+
+.library-console.compact .category-strip {
+  padding-top: 8px;
+}
+
+.section-title {
+  margin-bottom: 9px;
+}
+
+.photo-panel {
+  padding: 12px;
+}
+
+.photo-source {
+  min-height: 78px;
+  align-content: center;
+}
+
+.photo-source span {
+  width: 30px;
+  height: 30px;
+}
+
+.photo-source strong {
+  font-size: 14px;
+}
+
+.subscription-panel {
+  padding: 12px;
+}
+
+.compact-sub {
+  gap: 8px;
+}
+
+.subscription-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  align-items: flex-start;
+}
+
+.sub-details {
+  border-top: 1px solid var(--line);
+  padding-top: 8px;
+}
+
+.sub-details > summary {
+  min-height: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  list-style: none;
+  color: var(--green);
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.sub-details > summary::-webkit-details-marker {
+  display: none;
+}
+
+.sub-details > summary::after {
+  content: "+";
+  width: 24px;
+  height: 24px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  color: var(--muted);
+}
+
+.sub-details[open] > summary::after {
+  content: "−";
+  color: var(--green);
+}
+
+.sub-details .subscription-actions,
+.sub-details .promo-form {
+  margin-top: 8px;
+}
+
+.subscription-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+}
+
+.subscription-actions button {
+  min-width: 0;
+}
+
+@media (max-width: 420px) {
+  .tool-actions {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .tool-actions button {
+    min-height: 44px;
+    gap: 5px;
+    font-size: 11px;
+  }
+
+  .tool-line {
+    min-height: 50px;
+  }
+
+  .subscription-actions,
+  .promo-form div {
+    grid-template-columns: 1fr;
+  }
+}
