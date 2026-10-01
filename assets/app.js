@@ -120,6 +120,20 @@ let remoteCache = [];
 let searchMode = state.searchMode || "all";
 let searchCategory = state.searchCategory || "all";
 let profilePane = state.profilePane || "account";
+let coachRequestInFlight = false;
+
+function cleanCoachMessages(messages) {
+  const cleaned = [];
+  for (const message of Array.isArray(messages) ? messages : []) {
+    const role = message?.role === "user" ? "user" : "assistant";
+    const text = String(message?.text || "").trim();
+    if (!text) continue;
+    const previous = cleaned[cleaned.length - 1];
+    if (previous && previous.role === role && previous.text === text) continue;
+    cleaned.push({ role, text });
+  }
+  return cleaned.slice(-12);
+}
 
 function loadState() {
   const fallback = {
@@ -145,7 +159,7 @@ function loadState() {
     loaded.customFoods ||= [];
     loaded.favoriteFoods ||= [];
     loaded.measurements ||= [];
-    loaded.coachMessages ||= [];
+    loaded.coachMessages = cleanCoachMessages(loaded.coachMessages);
     loaded.subscription ||= { trialStartedAt: new Date().toISOString(), premiumUntil: "", plan: "trial" };
     loaded.subscription.trialStartedAt ||= new Date().toISOString();
     loaded.language ||= loaded.profile?.language || "ru";
@@ -738,7 +752,7 @@ function coachView() {
       </div>
       <div class="coach-notice">${escapeHtml(t("coachIntro"))}</div>
       <div class="coach-messages" aria-live="polite">
-        ${messages.length ? messages.map((message) => `<div class="coach-message ${message.role === "user" ? "user" : "assistant"}">${escapeHtml(message.text)}</div>`).join("") : `<div class="coach-empty">${escapeHtml(t("coachIntro"))}</div>`}
+        ${messages.map((message) => `<div class="coach-message ${message.role === "user" ? "user" : "assistant"}">${escapeHtml(message.text)}</div>`).join("")}
       </div>
       <form id="coach-form" class="coach-form">
         <textarea name="question" rows="3" maxlength="600" placeholder="${escapeAttr(t("coachPlaceholder"))}"></textarea>
@@ -902,7 +916,7 @@ function subscriptionPanel() {
         <p>${ui("Дневник бесплатно. Фото — 50 ⭐/месяц. Фото + тренер — 100 ⭐/3 месяца.", "Diary free. Photo — 50 ⭐/month. Photo + coach — 100 ⭐/3 months.")}</p>
       </div>
       </div>
-      <details class="sub-details" ${status.active ? "" : "open"}>
+      <details class="sub-details" ${status.tier === "free" ? "open" : ""}>
         <summary>${ui("Оплата и промокод", "Payment and promo")}</summary>
         <div class="subscription-actions">
           <button data-subscribe-plan="month">${ui("Фото · 50 ⭐/месяц", "Photo · 50 ⭐/month")}</button>
@@ -2030,6 +2044,7 @@ function coachContext() {
 
 async function askCoach(event) {
   event.preventDefault();
+  if (coachRequestInFlight) return;
   if (!hasCoachAccess()) {
     activeTab = "profile";
     render();
@@ -2042,6 +2057,7 @@ async function askCoach(event) {
     toast(t("coachEmpty"));
     return;
   }
+  coachRequestInFlight = true;
   const submit = event.currentTarget.querySelector("button[type='submit']");
   submit.disabled = true;
   state.coachMessages ||= [];
@@ -2063,8 +2079,9 @@ async function askCoach(event) {
   } catch {
     state.coachMessages[state.coachMessages.length - 1] = { role: "assistant", text: t("coachUnavailable") };
   }
-  state.coachMessages = state.coachMessages.slice(-12);
+  state.coachMessages = cleanCoachMessages(state.coachMessages);
   saveState();
+  coachRequestInFlight = false;
   render();
 }
 
