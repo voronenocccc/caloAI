@@ -47,6 +47,17 @@ const TEXT = {
     searchPlaceholder: "Например: творог савушкин или штрихкод",
     photo: "Фото",
     photoCaption: "тарелка, этикетка или таблица КБЖУ",
+    coach: "ИИ-тренер",
+    coachCaption: "доступен в плане «Фото + тренер»",
+    coachPlaceholder: "Например: что лучше съесть сегодня вечером?",
+    coachIntro: "Спроси про дневник, цель или следующий прием пищи.",
+    coachSend: "Спросить",
+    coachThinking: "Тренер думает...",
+    coachUnavailable: "Тренер временно недоступен. Проверь соединение и попробуй позже.",
+    coachEmpty: "Напиши вопрос, чтобы получить совет.",
+    photoLocked: "Фото доступно в подписке «Фото».",
+    coachLocked: "ИИ-тренер доступен в подписке «Фото + тренер».",
+    choosePlan: "Выбрать подписку",
     account: "Аккаунт",
     saveProfile: "Сохранить и рассчитать",
     added: "Добавлено в дневник"
@@ -68,6 +79,17 @@ const TEXT = {
     searchPlaceholder: "Example: yogurt, chicken, or barcode",
     photo: "Photo",
     photoCaption: "plate, label, or nutrition table",
+    coach: "AI coach",
+    coachCaption: "included with the Photo + coach plan",
+    coachPlaceholder: "For example: what should I eat tonight?",
+    coachIntro: "Ask about your diary, goal, or next meal.",
+    coachSend: "Ask",
+    coachThinking: "Coach is thinking...",
+    coachUnavailable: "The coach is temporarily unavailable. Check your connection and try again.",
+    coachEmpty: "Write a question to get advice.",
+    photoLocked: "Photo recognition is available in the Photo plan.",
+    coachLocked: "The AI coach is available in the Photo + coach plan.",
+    choosePlan: "Choose a plan",
     account: "Account",
     saveProfile: "Save and calculate",
     added: "Added to diary"
@@ -110,7 +132,8 @@ function loadState() {
     measurements: [],
     subscription: { trialStartedAt: new Date().toISOString(), premiumUntil: "", plan: "trial" },
     language: "ru",
-    settings: { aiEndpoint: CONFIG.aiEndpoint, foodEndpoint: CONFIG.foodEndpoint, subscriptionEndpoint: CONFIG.subscriptionEndpoint }
+    settings: { aiEndpoint: CONFIG.aiEndpoint, foodEndpoint: CONFIG.foodEndpoint, subscriptionEndpoint: CONFIG.subscriptionEndpoint },
+    coachMessages: []
   };
   try {
     const loaded = { ...fallback, ...JSON.parse(localStorage.getItem("elite_calorie_state") || "{}") };
@@ -122,6 +145,7 @@ function loadState() {
     loaded.customFoods ||= [];
     loaded.favoriteFoods ||= [];
     loaded.measurements ||= [];
+    loaded.coachMessages ||= [];
     loaded.subscription ||= { trialStartedAt: new Date().toISOString(), premiumUntil: "", plan: "trial" };
     loaded.subscription.trialStartedAt ||= new Date().toISOString();
     loaded.language ||= loaded.profile?.language || "ru";
@@ -256,16 +280,28 @@ function subscriptionStatus() {
   const trialStarted = new Date(state.subscription?.trialStartedAt || new Date().toISOString()).getTime();
   const trialUntil = trialStarted + 3 * 24 * 60 * 60 * 1000;
   const premiumUntil = state.subscription?.premiumUntil ? new Date(state.subscription.premiumUntil).getTime() : 0;
+  const serverPlan = String(state.subscription?.plan || "trial").toLowerCase();
+  const tier = serverPlan === "lifetime" || ["quarter", "coach", "pro", "ultra"].includes(serverPlan)
+    ? "coach"
+    : ["month", "photo", "premium"].includes(serverPlan) ? "photo" : "free";
   if (state.subscription?.lifetime || state.subscription?.plan === "lifetime") {
-    return { active: true, kind: "lifetime", until: new Date("2099-12-31T23:59:59.000Z"), daysLeft: Infinity };
+    return { active: true, kind: "lifetime", tier: "coach", until: new Date("2099-12-31T23:59:59.000Z"), daysLeft: Infinity };
   }
   if (premiumUntil > now) {
-    return { active: true, kind: "premium", until: new Date(premiumUntil), daysLeft: Math.ceil((premiumUntil - now) / 86400000) };
+    return { active: true, kind: "premium", tier, until: new Date(premiumUntil), daysLeft: Math.ceil((premiumUntil - now) / 86400000) };
   }
   if (trialUntil > now) {
-    return { active: true, kind: "trial", until: new Date(trialUntil), daysLeft: Math.ceil((trialUntil - now) / 86400000) };
+    return { active: true, kind: "free", tier: "free", until: new Date(trialUntil), daysLeft: Math.ceil((trialUntil - now) / 86400000) };
   }
-  return { active: false, kind: "expired", until: new Date(trialUntil), daysLeft: 0 };
+  return { active: false, kind: "expired", tier: "free", until: new Date(trialUntil), daysLeft: 0 };
+}
+
+function hasPhotoAccess() {
+  return subscriptionStatus().tier !== "free";
+}
+
+function hasCoachAccess() {
+  return subscriptionStatus().tier === "coach";
 }
 
 function calcTargets(profile) {
@@ -365,6 +401,7 @@ function render() {
     ${activeTab === "home" ? homeView(total, target, progress) : ""}
     ${activeTab === "search" ? searchView() : ""}
     ${activeTab === "photo" ? photoView() : ""}
+    ${activeTab === "coach" ? coachView() : ""}
     ${activeTab === "profile" ? profileView() : ""}
     ${tabs()}
   `;
@@ -502,8 +539,8 @@ function snackView(total, target) {
 function subscriptionGate() {
   return `
     <section class="subscription-gate">
-      <strong>${ui("Пробный период закончился", "Trial ended")}</strong>
-      <span>${ui("Оформи Premium через Telegram Stars: 50 звезд в месяц или 100 звезд за 3 месяца.", "Activate Premium with Telegram Stars: 50 Stars monthly or 100 Stars for 3 months.")}</span>
+      <strong>${ui("Дневник доступен бесплатно", "The diary is free")}</strong>
+      <span>${ui("Для фото и ИИ-тренера выбери подписку в профиле.", "Choose a plan in your profile for photo recognition and the AI coach.")}</span>
       <button data-tab-jump="profile">${ui("Перейти к оплате", "Go to payment")}</button>
     </section>
   `;
@@ -658,6 +695,7 @@ function snackSuggestions(remaining) {
 }
 
 function photoView() {
+  if (!hasPhotoAccess()) return planLockedView(t("photo"), t("photoLocked"));
   return `
     <section class="section">
       <div class="section-title">
@@ -686,6 +724,38 @@ function photoView() {
         <button class="button photo-submit" data-action="analyze-photo">${ui("Анализировать", "Analyze")}</button>
       </div>
       <div id="photo-result" class="stack section"></div>
+    </section>
+  `;
+}
+
+function coachView() {
+  if (!hasCoachAccess()) return planLockedView(t("coach"), t("coachLocked"));
+  const messages = Array.isArray(state.coachMessages) ? state.coachMessages : [];
+  return `
+    <section class="section coach-section">
+      <div class="section-title">
+        <div><h2>${t("coach")}</h2><p>${t("coachCaption")}</p></div>
+      </div>
+      <div class="coach-notice">${escapeHtml(t("coachIntro"))}</div>
+      <div class="coach-messages" aria-live="polite">
+        ${messages.length ? messages.map((message) => `<div class="coach-message ${message.role === "user" ? "user" : "assistant"}">${escapeHtml(message.text)}</div>`).join("") : `<div class="coach-empty">${escapeHtml(t("coachIntro"))}</div>`}
+      </div>
+      <form id="coach-form" class="coach-form">
+        <textarea name="question" rows="3" maxlength="600" placeholder="${escapeAttr(t("coachPlaceholder"))}"></textarea>
+        <button class="button" type="submit">${t("coachSend")}</button>
+      </form>
+    </section>
+  `;
+}
+
+function planLockedView(title, message) {
+  return `
+    <section class="section">
+      <div class="section-title"><div><h2>${title}</h2><p>${escapeHtml(message)}</p></div></div>
+      <div class="card stack plan-locked">
+        <p>${escapeHtml(message)}</p>
+        <button class="button" data-tab-jump="profile">${t("choosePlan")}</button>
+      </div>
     </section>
   `;
 }
@@ -827,16 +897,16 @@ function subscriptionPanel() {
     <section class="subscription-panel compact-sub">
       <div class="subscription-row">
         <div>
-        <span>${status.kind === "trial" ? ui("Пробный период", "Trial") : status.kind === "premium" || status.kind === "lifetime" ? "Premium" : ui("Подписка", "Subscription")}</span>
-        <strong>${status.kind === "lifetime" ? ui("навсегда", "lifetime") : status.active ? `${status.daysLeft} ${ui("дн. осталось", "days left")}` : ui("Нужна оплата", "Payment required")}</strong>
-        <p>${ui("Первые 3 дня бесплатно. Дальше Premium через Telegram Stars.", "First 3 days are free. Then Premium via Telegram Stars.")}</p>
+        <span>${status.tier === "coach" ? ui("Фото + тренер", "Photo + coach") : status.tier === "photo" ? ui("Фото", "Photo") : ui("Бесплатный дневник", "Free diary")}</span>
+        <strong>${status.kind === "lifetime" ? ui("навсегда", "lifetime") : status.active ? ui("Бесплатно", "Free") : ui("Активна", "Active")}</strong>
+        <p>${ui("Дневник бесплатно. Фото — 50 ⭐/месяц. Фото + тренер — 100 ⭐/3 месяца.", "Diary free. Photo — 50 ⭐/month. Photo + coach — 100 ⭐/3 months.")}</p>
       </div>
       </div>
       <details class="sub-details" ${status.active ? "" : "open"}>
         <summary>${ui("Оплата и промокод", "Payment and promo")}</summary>
         <div class="subscription-actions">
-          <button data-subscribe-plan="month">50 ⭐ / ${ui("месяц", "month")}</button>
-          <button data-subscribe-plan="quarter">100 ⭐ / 3 ${ui("мес.", "mo")}</button>
+          <button data-subscribe-plan="month">${ui("Фото · 50 ⭐/месяц", "Photo · 50 ⭐/month")}</button>
+          <button data-subscribe-plan="quarter">${ui("Фото + тренер · 100 ⭐/3 мес.", "Photo + coach · 100 ⭐/3 months")}</button>
         </div>
         <form id="promo-form" class="promo-form">
           <label>${ui("Промокод", "Promo code")}</label>
@@ -852,8 +922,8 @@ function subscriptionPanel() {
 
 function subscriptionLabel(subscription) {
   if (subscription.kind === "trial") return `${ui("Пробный период", "Trial")} · ${subscription.daysLeft} ${ui("дн.", "d")}`;
-  if (subscription.kind === "lifetime") return ui("Premium навсегда", "Premium lifetime");
-  if (subscription.kind === "premium") return `${ui("Premium до", "Premium until")} ${subscription.until.toLocaleDateString(lang() === "en" ? "en-US" : "ru-RU")}`;
+  if (subscription.kind === "lifetime") return ui("Фото + тренер навсегда", "Photo + coach lifetime");
+  if (subscription.kind === "premium") return `${subscription.tier === "coach" ? ui("Фото + тренер до", "Photo + coach until") : ui("Фото до", "Photo until")} ${subscription.until.toLocaleDateString(lang() === "en" ? "en-US" : "ru-RU")}`;
   return ui("Нужна подписка", "Subscription needed");
 }
 
@@ -1082,7 +1152,7 @@ function planSummary(plan) {
 }
 
 function tabs() {
-  const items = [["home", "i-home"], ["search", "i-search"], ["photo", "i-camera"], ["profile", "i-user"]];
+  const items = [["home", "i-home"], ["search", "i-search"], ["photo", "i-camera"], ["coach", "i-message"], ["profile", "i-user"]];
   return `<nav class="tabs">${items.map(([id, ico]) => `<button class="tab ${activeTab === id ? "active" : ""}" data-tab="${id}">${icon(ico)}</button>`).join("")}</nav>`;
 }
 
@@ -1142,6 +1212,7 @@ function bind() {
   });
 
   document.querySelector("#profile-form")?.addEventListener("submit", saveProfile);
+  document.querySelector("#coach-form")?.addEventListener("submit", askCoach);
   document.querySelector("#search")?.addEventListener("input", debounce(runSearch, 220));
   document.querySelector("[data-action='custom-food']")?.addEventListener("click", openCustomFood);
   document.querySelector("[data-action='scan-barcode']")?.addEventListener("click", openBarcodeScanner);
@@ -1812,6 +1883,12 @@ function selectedPhotoFile() {
 }
 
 async function analyzePhoto() {
+  if (!hasPhotoAccess()) {
+    activeTab = "profile";
+    render();
+    toast(t("photoLocked"));
+    return;
+  }
   const file = selectedPhotoFile();
   const note = document.querySelector("#photo-note").value.trim();
   const out = document.querySelector("#photo-result");
@@ -1839,9 +1916,17 @@ async function analyzePhoto() {
     form.append("image", file);
     form.append("note", note);
     const response = await fetch(state.settings.aiEndpoint, { method: "POST", body: form });
-    const estimate = await response.json();
+    const estimate = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      estimate.error = response.status === 402 || response.status === 429 || /quota|limit|billing|resource exhausted/i.test(JSON.stringify(estimate))
+        ? "FREE_QUOTA_EXHAUSTED"
+        : estimate.error || `HTTP_${response.status}`;
+    }
     out.innerHTML = aiEstimateView(preview, estimate);
-    out.querySelector("[data-action='add-ai-estimate']")?.addEventListener("click", () => {
+    out.querySelector("[data-action='custom-food']")?.addEventListener("click", openCustomFood);
+    out.querySelector("[data-action='add-ai-estimate']")?.addEventListener("click", (event) => {
+      if (event.currentTarget.disabled) return;
+      event.currentTarget.disabled = true;
       (estimate.items || []).forEach(item => {
         const entry = {
           id: crypto.randomUUID(),
@@ -1863,7 +1948,8 @@ async function analyzePhoto() {
       render();
     });
   } catch {
-    out.innerHTML = `<img class="photo-preview" src="${preview}" alt="Фото блюда" /><div class="card">Не удалось получить AI-анализ. Проверь endpoint.</div>`;
+    out.innerHTML = `<img class="photo-preview" src="${preview}" alt="Фото блюда" /><div class="card stack"><h3>${ui("AI-анализ недоступен", "AI analysis unavailable")}</h3><p class="mini-note">${ui("Проверь соединение или добавь блюдо вручную. Платный режим не включается.", "Check your connection or add the food manually. Paid mode is not enabled.")}</p><button class="button secondary" data-action="custom-food">${ui("Добавить вручную", "Add manually")}</button></div>`;
+    out.querySelector("[data-action='custom-food']")?.addEventListener("click", openCustomFood);
   }
 }
 
@@ -1886,12 +1972,14 @@ function saveEntryAsFood(entry, source = "Моя база") {
 
 function aiEstimateView(preview, estimate) {
   if (estimate.error) {
+    const quota = estimate.error === "FREE_QUOTA_EXHAUSTED";
     const details = estimate.details?.error?.message || estimate.message || estimate.error;
     return `
       <img class="photo-preview" src="${preview}" alt="Фото блюда" />
       <div class="card">
-        <h3>AI-анализ не сработал</h3>
-        <p class="mini-note">${escapeHtml(details)}</p>
+        <h3>${quota ? ui("Бесплатный лимит исчерпан", "Free quota reached") : ui("AI-анализ не сработал", "AI analysis failed")}</h3>
+        <p class="mini-note">${quota ? ui("Попробуй позже или добавь блюдо вручную. Платный режим не включается.", "Try again later or add the food manually. Paid mode is not enabled.") : escapeHtml(details)}</p>
+        <button class="button secondary" data-action="custom-food">${ui("Добавить вручную", "Add manually")}</button>
       </div>
     `;
   }
@@ -1899,6 +1987,7 @@ function aiEstimateView(preview, estimate) {
     return `<img class="photo-preview" src="${preview}" alt="Фото блюда" /><div class="card">${escapeHtml(estimate.question)}</div>`;
   }
   const items = estimate.items || [];
+  if (!items.length) return `<img class="photo-preview" src="${preview}" alt="Фото блюда" /><div class="card stack"><h3>${ui("Не удалось уверенно определить еду", "Food could not be identified confidently")}</h3><p class="mini-note">${ui("Добавь блюдо вручную или сделай фото ближе к тарелке.", "Add it manually or take a closer photo.")}</p><button class="button secondary" data-action="custom-food">${ui("Добавить вручную", "Add manually")}</button></div>`;
   return `
     <img class="photo-preview" src="${preview}" alt="Фото блюда" />
     <div class="stack">
@@ -1906,6 +1995,77 @@ function aiEstimateView(preview, estimate) {
       <button class="button" data-action="add-ai-estimate">Добавить оценку</button>
     </div>
   `;
+}
+
+function coachEndpoint() {
+  const endpoint = String(state.settings.aiEndpoint || "").replace(/\/+$/, "");
+  return endpoint ? `${endpoint}/coach` : "";
+}
+
+function coachContext() {
+  const profile = state.profile || {};
+  return {
+    profile: {
+      sex: profile.sex,
+      age: Number(profile.age) || 0,
+      height: Number(profile.height) || 0,
+      weight: Number(profile.weight) || 0,
+      targetWeight: Number(profile.targetWeight) || 0,
+      goal: profile.goal,
+      activity: profile.activity,
+      target: targets()
+    },
+    date: selectedDateKey,
+    entries: byDate().map((entry) => ({
+      name: String(entry.name || "").slice(0, 120),
+      grams: Number(entry.grams) || 0,
+      kcal: Number(entry.kcal) || 0,
+      protein: Number(entry.protein) || 0,
+      fat: Number(entry.fat) || 0,
+      carbs: Number(entry.carbs) || 0,
+      time: String(entry.time || "").slice(0, 5)
+    }))
+  };
+}
+
+async function askCoach(event) {
+  event.preventDefault();
+  if (!hasCoachAccess()) {
+    activeTab = "profile";
+    render();
+    toast(t("coachLocked"));
+    return;
+  }
+  const form = new FormData(event.currentTarget);
+  const question = String(form.get("question") || "").trim();
+  if (!question) {
+    toast(t("coachEmpty"));
+    return;
+  }
+  const submit = event.currentTarget.querySelector("button[type='submit']");
+  submit.disabled = true;
+  state.coachMessages ||= [];
+  state.coachMessages.push({ role: "user", text: question });
+  state.coachMessages.push({ role: "assistant", text: t("coachThinking") });
+  saveState();
+  render();
+  try {
+    const response = await fetch(coachEndpoint(), {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ question, context: coachContext() })
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok || data.error) throw new Error(data.error || `HTTP_${response.status}`);
+    const answer = String(data.answer || data.message || "").trim();
+    if (!answer) throw new Error("empty_answer");
+    state.coachMessages[state.coachMessages.length - 1] = { role: "assistant", text: answer };
+  } catch {
+    state.coachMessages[state.coachMessages.length - 1] = { role: "assistant", text: t("coachUnavailable") };
+  }
+  state.coachMessages = state.coachMessages.slice(-12);
+  saveState();
+  render();
 }
 
 function saveProfile(event) {
@@ -2082,7 +2242,7 @@ function openSettings() {
         <label>Subscription endpoint</label>
         <input name="subscriptionEndpoint" value="${escapeAttr(state.settings.subscriptionEndpoint || "")}" placeholder="https://your-telegram-worker.workers.dev/subscription" />
       </div>
-      <p class="mini-note">OpenAI API key нельзя хранить в GitHub Pages. Endpoint должен быть backend/worker. Food endpoint подключает товарную базу, Subscription endpoint отправляет счета Telegram Stars.</p>
+      <p class="mini-note">Ключ модели хранится только на backend/worker и не попадает в GitHub Pages. Сейчас фото и тренер используют Gemini с бесплатной квотой; при лимите платный режим не включается.</p>
       <button class="button">Сохранить</button>
     </form>
   `);
